@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Group Project Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-top: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5rem 0.6rem;
+      margin-bottom: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #333;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .meta {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    .error {
+      color: #b00020;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: inherit;
+    }
+    .small {
+      font-size: 0.85rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Game Project Feedback</h1>
+  <p class="small">
+    Enter your student ID to generate a private code and view your group’s feedback.
+  </p>
+
+  <div class="card">
+    <form id="idForm">
+      <label for="studentId">Student ID</label>
+      <input
+        type="text"
+        id="studentId"
+        name="studentId"
+        placeholder="e.g. 12137679"
+        autocomplete="off"
+        required
+      />
+      <button type="submit">Show Feedback</button>
+      <div id="formError" class="error" style="display:none;"></div>
+      <div id="codeDisplay" class="meta" style="display:none;"></div>
+    </form>
+  </div>
+
+  <div id="feedbackContainer" class="card" style="display:none;">
+    <h2>Your Feedback</h2>
+    <div class="meta" id="codeMeta"></div>
+    <pre id="feedbackText"></pre>
+  </div>
+
+  <div id="noFeedbackContainer" class="card" style="display:none;">
+    <h2>No Feedback Found</h2>
+    <p>
+      A code was generated for this ID, but no feedback is stored under that code.
+      If you believe this is an error, please contact your instructor.
+    </p>
+    <div class="meta" id="noFeedbackMeta"></div>
+  </div>
+
+  <!-- Load the comments mapping (base64-encoded) -->
+  <script src="comments.js"></script>
+
+  <script>
+    // -----------------------------
+    // 1. CONFIG: Hash parameters
+    // -----------------------------
+    // Simple deterministic hash: code = (ID * A + B) mod MOD
+    // Change these numbers if you want a different mapping.
+    const A = 7919;
+    const B = 12345;
+    const MOD = 1000000; // gives a 6-digit code: 000000–999999
+
+    // -----------------------------
+    // 2. Hash function: ID -> code
+    // -----------------------------
+    function generateCodeFromId(idRaw) {
+      // strip non-digits so " 12137679 " still works
+      const digits = (idRaw || "").replace(/\D/g, "");
+      if (!digits) return null;
+      const n = parseInt(digits, 10);
+      if (Number.isNaN(n)) return null;
+      const codeNum = (n * A + B) % MOD;
+      return codeNum.toString().padStart(6, "0"); // 6-digit string
+    }
+
+    // -----------------------------
+    // 3. UI helpers
+    // -----------------------------
+    function showElement(id) {
+      document.getElementById(id).style.display = "";
+    }
+    function hideElement(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    function showFeedbackForCode(code, fromUrl = false) {
+      // COMMENTS_BY_CODE is defined globally in comments.js
+      const feedback = (window.COMMENTS_BY_CODE || {})[code];
+
+      // Hide all result containers first
+      hideElement("feedbackContainer");
+      hideElement("noFeedbackContainer");
+
+      if (feedback) {
+        document.getElementById("feedbackText").textContent = feedback;
+        document.getElementById("codeMeta").textContent =
+          "Private code: " + code + (fromUrl ? " (loaded from URL)" : "");
+        showElement("feedbackContainer");
+      } else {
+        document.getElementById("noFeedbackMeta").textContent =
+          "Generated code: " + code + (fromUrl ? " (loaded from URL)" : "");
+        showElement("noFeedbackContainer");
+      }
+    }
+
+    // -----------------------------
+    // 4. Form submit handler
+    // -----------------------------
+    document.getElementById("idForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      hideElement("formError");
+      hideElement("feedbackContainer");
+      hideElement("noFeedbackContainer");
+      hideElement("codeDisplay");
+
+      const idInput = document.getElementById("studentId").value;
+      const code = generateCodeFromId(idInput);
+
+      if (!code) {
+        const err = document.getElementById("formError");
+        err.textContent = "Please enter a valid numeric student ID.";
+        showElement("formError");
+        return;
+      }
+
+      // Show the generated code below the form (optional)
+      const codeDisplay = document.getElementById("codeDisplay");
+      codeDisplay.textContent = "Generated code for this ID: " + code;
+      showElement("codeDisplay");
+
+      // Update the URL query parameter so it can be bookmarked or shared
+      const url = new URL(window.location.href);
+      url.searchParams.set("code", code);
+      window.history.replaceState({}, "", url.toString());
+
+      showFeedbackForCode(code, false);
+    });
+
+    // -----------------------------
+    // 5. On load: support ?code=XXXXXX
+    // -----------------------------
+    window.addEventListener("DOMContentLoaded", function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const codeParam = urlParams.get("code");
+
+      // Optional: log a sample code for a known ID (12137679)
+      const sampleId = "12137679";
+      const sampleCode = generateCodeFromId(sampleId);
+      console.log(
+        "Sample: ID " + sampleId + " maps to code " + sampleCode +
+        ". Use that as the key in COMMENTS_BY_CODE_ENC in comments.js."
+      );
+
+      if (codeParam) {
+        // If someone comes directly via ?code=XXXXXX
+        showFeedbackForCode(codeParam, true);
+      }
+    });
+  </script>
+</body>
+</html>
