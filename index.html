@@ -72,20 +72,19 @@
 <body>
   <h1>Game Project Feedback</h1>
   <p class="small">
-    Enter your student ID to generate a private code and view your group’s feedback.
+  Enter your code to view your group’s feedback.
   </p>
 
-  <div class="card">
-    <form id="idForm">
-      <label for="studentId">Student ID</label>
-      <input
-        type="text"
-        id="studentId"
-        name="studentId"
-        placeholder="e.g. 12137679"
-        autocomplete="off"
-        required
-      />
+  <label for="studentId">Code</label>
+  <input
+    type="text"
+    id="studentId"
+    name="studentId"
+    placeholder="e.g. 586428"
+    autocomplete="off"
+    required
+/>
+
       <button type="submit">Show Feedback</button>
       <div id="formError" class="error" style="display:none;"></div>
       <div id="codeDisplay" class="meta" style="display:none;"></div>
@@ -108,33 +107,12 @@
   </div>
 
   <!-- Load the comments mapping (base64-encoded) -->
+    <!-- Load the comments mapping (base64-encoded) -->
   <script src="comments.js"></script>
 
   <script>
     // -----------------------------
-    // 1. CONFIG: Hash parameters
-    // -----------------------------
-    // Simple deterministic hash: code = (ID * A + B) mod MOD
-    // Change these numbers if you want a different mapping.
-    const A = 7919;
-    const B = 12345;
-    const MOD = 1000000; // gives a 6-digit code: 000000–999999
-
-    // -----------------------------
-    // 2. Hash function: ID -> code
-    // -----------------------------
-    function generateCodeFromId(idRaw) {
-      // strip non-digits so " 12137679 " still works
-      const digits = (idRaw || "").replace(/\D/g, "");
-      if (!digits) return null;
-      const n = parseInt(digits, 10);
-      if (Number.isNaN(n)) return null;
-      const codeNum = (n * A + B) % MOD;
-      return codeNum.toString().padStart(6, "0"); // 6-digit string
-    }
-
-    // -----------------------------
-    // 3. UI helpers
+    // 1. UI helpers
     // -----------------------------
     function showElement(id) {
       document.getElementById(id).style.display = "";
@@ -154,17 +132,17 @@
       if (feedback) {
         document.getElementById("feedbackText").textContent = feedback;
         document.getElementById("codeMeta").textContent =
-          "Private code: " + code + (fromUrl ? " (loaded from URL)" : "");
+          "Code: " + code + (fromUrl ? " (loaded from URL)" : "");
         showElement("feedbackContainer");
       } else {
         document.getElementById("noFeedbackMeta").textContent =
-          "Generated code: " + code + (fromUrl ? " (loaded from URL)" : "");
+          "Entered code: " + code + (fromUrl ? " (loaded from URL)" : "");
         showElement("noFeedbackContainer");
       }
     }
 
     // -----------------------------
-    // 4. Form submit handler
+    // 2. Form submit handler
     // -----------------------------
     document.getElementById("idForm").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -173,19 +151,23 @@
       hideElement("noFeedbackContainer");
       hideElement("codeDisplay");
 
-      const idInput = document.getElementById("studentId").value;
-      const code = generateCodeFromId(idInput);
+      const raw = document.getElementById("studentId").value || "";
+
+      // If codes are digits only:
+      const code = raw.replace(/\D/g, "");  // keep only digits
+      // If codes might be letters too, use:
+      // const code = raw.replace(/\s/g, "").toUpperCase();
 
       if (!code) {
         const err = document.getElementById("formError");
-        err.textContent = "Please enter a valid numeric student ID.";
+        err.textContent = "Please enter a valid code.";
         showElement("formError");
         return;
       }
 
-      // Show the generated code below the form (optional)
+      // Show the code below the form (optional)
       const codeDisplay = document.getElementById("codeDisplay");
-      codeDisplay.textContent = "Generated code for this ID: " + code;
+      codeDisplay.textContent = "Code entered: " + code;
       showElement("codeDisplay");
 
       // Update the URL query parameter so it can be bookmarked or shared
@@ -197,25 +179,20 @@
     });
 
     // -----------------------------
-    // 5. On load: support ?code=XXXXXX
+    // 3. On load: support ?code=XXXXXX
     // -----------------------------
     window.addEventListener("DOMContentLoaded", function () {
       const urlParams = new URLSearchParams(window.location.search);
       const codeParam = urlParams.get("code");
 
-      // Optional: log a sample code for a known ID (12137679)
-      const sampleId = "12137679";
-      const sampleCode = generateCodeFromId(sampleId);
-      console.log(
-        "Sample: ID " + sampleId + " maps to code " + sampleCode +
-        ". Use that as the key in COMMENTS_BY_CODE_ENC in comments.js."
-      );
-
       if (codeParam) {
-        // If someone comes directly via ?code=XXXXXX
         showFeedbackForCode(codeParam, true);
+        // Optionally also pre-fill the box:
+        const input = document.getElementById("studentId");
+        if (input) input.value = codeParam;
       }
     });
   </script>
+
 </body>
 </html>
