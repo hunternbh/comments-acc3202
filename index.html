@@ -72,19 +72,20 @@
 <body>
   <h1>Game Project Feedback</h1>
   <p class="small">
-  Enter your code to view your group’s feedback.
+    Enter your code to view your group’s feedback.
   </p>
 
-  <label for="studentId">Code</label>
-  <input
-    type="text"
-    id="studentId"
-    name="studentId"
-    placeholder="e.g. 586428"
-    autocomplete="off"
-    required
-/>
-
+  <div class="card">
+    <form id="idForm">
+      <label for="studentId">Code</label>
+      <input
+        type="text"
+        id="studentId"
+        name="studentId"
+        placeholder="e.g. 586428"
+        autocomplete="off"
+        required
+      />
       <button type="submit">Show Feedback</button>
       <div id="formError" class="error" style="display:none;"></div>
       <div id="codeDisplay" class="meta" style="display:none;"></div>
@@ -100,14 +101,13 @@
   <div id="noFeedbackContainer" class="card" style="display:none;">
     <h2>No Feedback Found</h2>
     <p>
-      A code was generated for this ID, but no feedback is stored under that code.
+      No feedback is stored under this code.
       If you believe this is an error, please contact your instructor.
     </p>
     <div class="meta" id="noFeedbackMeta"></div>
   </div>
 
   <!-- Load the comments mapping (base64-encoded) -->
-    <!-- Load the comments mapping (base64-encoded) -->
   <script src="comments.js"></script>
 
   <script>
@@ -144,7 +144,10 @@
     // -----------------------------
     // 2. Form submit handler
     // -----------------------------
-    document.getElementById("idForm").addEventListener("submit", function (e) {
+    const form = document.getElementById("idForm");
+    console.log("Form found:", form); // debug
+
+    form.addEventListener("submit", function (e) {
       e.preventDefault();
       hideElement("formError");
       hideElement("feedbackContainer");
@@ -175,6 +178,7 @@
       url.searchParams.set("code", code);
       window.history.replaceState({}, "", url.toString());
 
+      console.log("Looking up code:", code);
       showFeedbackForCode(code, false);
     });
 
@@ -186,13 +190,12 @@
       const codeParam = urlParams.get("code");
 
       if (codeParam) {
-        showFeedbackForCode(codeParam, true);
-        // Optionally also pre-fill the box:
         const input = document.getElementById("studentId");
         if (input) input.value = codeParam;
+        showFeedbackForCode(codeParam, true);
       }
     });
   </script>
-
 </body>
+
 </html>
